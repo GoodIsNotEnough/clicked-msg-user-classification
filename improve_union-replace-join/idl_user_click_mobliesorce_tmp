@@ -1,0 +1,44 @@
+ALTER TABLE idl_user_click_mobliesorce_tmp DROP PARTITION(ds<="{p0}");
+
+INSERT INTO idl_user_click_mobliesorce_tmp PARTITION(ds="{p0}")
+SELECT 
+uid,
+province_v+head_v+tail_v AS moblie_weight
+FROM
+    (SELECT 
+    t1.uid,
+    if(isnull(t2.keyword),0,t2.weight) AS province_v,
+    if(isnull(t3.keyword),0,t3.weight) AS head_v,
+    if(isnull(t4.keyword),0,t4.weight) AS tail_v
+    FROM
+        (SELECT 
+        DISTINCT user_id AS uid,
+        concat_ws('_','province',IF(ISNULL(mobile_province),'NULL',mobile_province)) AS province,
+        concat_ws('_','head',IF(ISNULL(moblie_mark),'NULL',substring(moblie_mark,1,3))) AS head,
+        concat_ws('_','tail',IF(ISNULL(moblie_mark),'NULL',substring(moblie_mark,-1,1))) AS tail
+        FROM odl_user_log
+        WHERE ds LIKE "{p0}%"
+        ) t1
+    LEFT JOIN
+        (SELECT 
+        DISTINCT keyword,
+        weight
+        FROM config_user_click_weight_parameter_log
+        WHERE keytype="province"
+        ) t2 
+    ON t1.province=t2.keyword
+    LEFT JOIN
+        (SELECT DISTINCT keyword,
+        weight
+        FROM config_user_click_weight_parameter_log
+        WHERE keytype="head"
+        ) t3 
+    ON t1.head=t3.keyword
+    LEFT JOIN
+        (SELECT DISTINCT keyword,
+        weight
+        FROM config_user_click_weight_parameter_log
+        WHERE keytype="tail"
+        ) t4 
+    ON t1.tail=t4.keyword
+    ) s1;

@@ -1,0 +1,23 @@
+ALTER TABLE idl_user_click_rootsorce_tmp DROP PARTITION (ds<="{p0}");
+
+INSERT INTO idl_user_click_rootsorce_tmp PARTITION (ds="{p0}")
+SELECT 
+t2.uid,
+sum(weight) AS weight_total
+FROM
+    (SELECT 
+    keyword,
+    weight
+    FROM config_user_click_weight_parameter_log
+    WHERE keytype="keyword"
+    ) t1
+INNER JOIN
+    (SELECT 
+    uid,
+    subroot_name
+    FROM idl_limao_user_cidset_tmp
+    WHERE ds="{p0}"
+    ) t2 
+ON t1.keyword=t2.subroot_name
+WHERE NOT isnull(t2.uid)
+GROUP BY t2.uid;

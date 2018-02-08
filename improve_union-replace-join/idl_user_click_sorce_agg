@@ -1,0 +1,25 @@
+ALTER TABLE idl_user_click_sorce_agg DROP PARTITION (ds<="{p3}");
+ALTER TABLE idl_user_click_sorce_agg DROP PARTITION (ds="{p0}");
+
+INSERT INTO idl_user_click_sorce_agg PARTITION (ds="{p0}")
+SELECT 
+t1.uid,
+t1.value_p
+FROM
+    (SELECT uid,
+    value_p
+    FROM idl_user_click_sorce_agg
+    WHERE ds="{p2}"
+    ) t1
+LEFT JOIN
+    (SELECT DISTINCT uid
+    FROM idl_user_click_sorce_tmp
+    WHERE ds="{p0}"
+    ) t2 
+ON t1.uid=t2.uid
+WHERE isnull(t2.uid)
+UNION ALL
+SELECT DISTINCT uid,
+value_p
+FROM idl_user_click_sorce_tmp
+WHERE ds="{p0}";

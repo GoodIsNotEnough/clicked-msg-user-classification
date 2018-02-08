@@ -1,0 +1,25 @@
+ALTER TABLE idl_user_click_sorce_tmp DROP PARTITION (ds<="{p0}");
+
+INSERT INTO idl_user_click_sorce_tmp PARTITION (ds="{p0}")
+SELECT 
+uid,
+exp(weight_value)/(1+exp(weight_value)) AS value_socre
+FROM
+    (SELECT 
+    uid,
+    sum(weight_value) AS weight_value
+    FROM
+        (SELECT 
+        uid,
+        value_p AS weight_value
+        FROM idl_user_click_mobliesorce_tmp
+        WHERE ds="{p0}"
+        UNION ALL 
+        SELECT 
+        uid,
+        weight_total AS weight_value
+        FROM idl_user_click_rootsorce_tmp
+        WHERE ds="{p0}"
+        ) t1
+    GROUP BY uid
+    ) t2;
